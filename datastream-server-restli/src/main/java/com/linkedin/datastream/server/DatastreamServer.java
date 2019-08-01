@@ -21,6 +21,9 @@ import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.codahale.metrics.graphite.Graphite;
+import com.codahale.metrics.graphite.GraphiteReporter;
+import com.codahale.metrics.graphite.GraphiteSender;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.slf4j.Logger;
@@ -67,6 +70,11 @@ import static com.linkedin.datastream.server.DatastreamServerConfigurationConsta
 import static com.linkedin.datastream.server.DatastreamServerConfigurationConstants.CONFIG_DIAG_PORT;
 import static com.linkedin.datastream.server.DatastreamServerConfigurationConstants.CONFIG_ENABLE_EMBEDDED_JETTY;
 import static com.linkedin.datastream.server.DatastreamServerConfigurationConstants.CONFIG_FACTORY_CLASS_NAME;
+import static com.linkedin.datastream.server.DatastreamServerConfigurationConstants.CONFIG_GRAPHITE_ENABLED;
+import static com.linkedin.datastream.server.DatastreamServerConfigurationConstants.CONFIG_GRAPHITE_HOST;
+import static com.linkedin.datastream.server.DatastreamServerConfigurationConstants.CONFIG_GRAPHITE_METRICS_PREFIX;
+import static com.linkedin.datastream.server.DatastreamServerConfigurationConstants.CONFIG_GRAPHITE_PORT;
+import static com.linkedin.datastream.server.DatastreamServerConfigurationConstants.CONFIG_GRAPHITE_REPORTING_INTERVAL;
 import static com.linkedin.datastream.server.DatastreamServerConfigurationConstants.CONFIG_HTTP_PORT;
 import static com.linkedin.datastream.server.DatastreamServerConfigurationConstants.CONFIG_SERDE_NAMES;
 import static com.linkedin.datastream.server.DatastreamServerConfigurationConstants.CONFIG_SERDE_PREFIX;
@@ -90,6 +98,11 @@ public class DatastreamServer {
   private static final List<BrooklinMetricInfo> METRIC_INFOS = new ArrayList<>();
 
   private final String _csvMetricsDir;
+  private final boolean _graphiteEnabled;
+  private final String _graphiteHost;
+  private final int _graphitePort;
+  private final String _graphiteMetricPrefix;
+  private final int _graphiteReportingInterval;
   private final Map<String, String> _bootstrapConnectors;
 
   private Coordinator _coordinator;
@@ -105,6 +118,8 @@ public class DatastreamServer {
     // Instantiate a dynamic metrics manager singleton object so that other components can emit metrics on the fly
     DynamicMetricsManager.createInstance(METRIC_REGISTRY);
   }
+
+
 
   /**
    * Constructor for the DatastreamServer
@@ -196,6 +211,11 @@ public class DatastreamServer {
     _serverComponentHealthAggregator = new ServerComponentHealthAggregator(zkClient, coordinatorConfig.getCluster(), diagPort, diagPath);
 
     _csvMetricsDir = verifiableProperties.getString(CONFIG_CSV_METRICS_DIR, "");
+    _graphiteEnabled = verifiableProperties.getBoolean(CONFIG_GRAPHITE_ENABLED, false);
+    _graphiteHost = verifiableProperties.getString(CONFIG_GRAPHITE_HOST);
+    _graphitePort = verifiableProperties.getInt(CONFIG_GRAPHITE_PORT);
+    _graphiteMetricPrefix = verifiableProperties.getString(CONFIG_GRAPHITE_METRICS_PREFIX);
+    _graphiteReportingInterval = verifiableProperties.getInt(CONFIG_GRAPHITE_REPORTING_INTERVAL, 60);
 
     verifiableProperties.verify();
 
@@ -364,6 +384,16 @@ public class DatastreamServer {
           .convertDurationsTo(MILLISECONDS)
           .build(csvDir);
       reporter.start(1, MINUTES);
+    }
+
+    if (_graphiteEnabled) {
+      LOG.info("Starting reporting metrics to the graphite server on {}:{}", _graphiteHost, _graphitePort);
+      final Graphite graphite = new Graphite(_graphiteHost, _graphitePort);
+      final GraphiteReporter graphiteReporter = GraphiteReporter.forRegistry(METRIC_REGISTRY)
+              .prefixedWith(_graphiteMetricPrefix)
+              .build(graphite);
+
+      graphiteReporter.start(_graphiteReportingInterval, SECONDS);
     }
   }
 

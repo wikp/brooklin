@@ -14,6 +14,12 @@ public final class DatastreamServerConfigurationConstants {
   public static final String CONFIG_CONNECTOR_NAMES = CONFIG_PREFIX + "connectorNames";
   public static final String CONFIG_HTTP_PORT = CONFIG_PREFIX + "httpPort";
   public static final String CONFIG_CSV_METRICS_DIR = CONFIG_PREFIX + "csvMetricsDir";
+  public static final String CONFIG_GRAPHITE_PREFIX = CONFIG_PREFIX + "graphiteMetrics.";
+  public static final String CONFIG_GRAPHITE_ENABLED = CONFIG_GRAPHITE_PREFIX + "enabled";
+  public static final String CONFIG_GRAPHITE_HOST = CONFIG_GRAPHITE_PREFIX + "host";
+  public static final String CONFIG_GRAPHITE_PORT = CONFIG_GRAPHITE_PREFIX + "port";
+  public static final String CONFIG_GRAPHITE_METRICS_PREFIX = CONFIG_GRAPHITE_PREFIX + "prefix";
+  public static final String CONFIG_GRAPHITE_REPORTING_INTERVAL = CONFIG_GRAPHITE_PREFIX + "reportingInterval";
   public static final String CONFIG_ZK_ADDRESS = CoordinatorConfig.CONFIG_ZK_ADDRESS;
   public static final String CONFIG_CLUSTER_NAME = CoordinatorConfig.CONFIG_CLUSTER;
   public static final String CONFIG_ENABLE_EMBEDDED_JETTY = "enableEmbeddedJetty";
